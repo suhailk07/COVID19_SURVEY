@@ -1,10 +1,13 @@
+import speech_recognition as sr
+from gtts import gTTS
 from fpdf import FPDF
+import os
 class Person:
     def __init__(self,name,age,height,weight,threat):
         self.name = name
-        self.age = age
-        self.height = height
-        self.weight = weight
+        self.age = int(age)
+        self.height = float(height)
+        self.weight = float(weight)
         self.threat = threat
     
     def Data(self,survey_report):
@@ -16,7 +19,7 @@ class Person:
         return survey_report
     
     def BMI(self,survey_report):
-        height_square = self.height**2
+        height_square = (self.height)**2
         weight = self.weight
         BMI = float(weight/height_square)
         survey_report += '\n' + "BMI is: " + str(BMI) + '\n'
@@ -35,7 +38,7 @@ class Person:
             survey_report += "YOU ARE SAFE" + '\n'
         if self.threat == 'not safe':
             survey_report += "YOU NEED TO SELF-QUARANTINE YOURSELF\nIF THE PROBLEM PERSISTS,\n CONSULT TO A NEARBY COVID19 HEALTH CARE HOSPITAL" + '\n'
-        if self.threat == 'danger':
+        if self.threat == 'in danger':
             survey_report += "YOU ARE IN DANGER\nPLEASE VISIT THE NEARBY COVID19 HEALTH CARE HOSPITAL AS SOON AS POSSIBLE" + '\n'
         return survey_report
     @staticmethod
@@ -97,7 +100,7 @@ def points_evaluation(points):
     elif points > 30 and points < 80:
         return 'not safe'
     else:
-        return 'danger'
+        return 'in danger'
 
 def database(survey_report):
     survey_report += '\n\n'
@@ -125,12 +128,47 @@ def pdf(name):
 
     pdf.output(name+".pdf") 
 
+def listening():
+	listen = sr.Recognizer()
+    # print('...')
+	with sr.Microphone() as source:
+		audio = listen.listen(source)
+
+		try:
+			output = listen.recognize_google(audio)
+			return output.lower()
+		except:
+			return "TRY AGAIN"
+
+def speak(ask):
+    print(ask)
+    text = listening()
+    for loop in range(3):
+        if text == 'TRY AGAIN':
+            print('SORRY COULD NOT RECOGNIZE YOU')
+            listening()
+        else:
+            return text
+    else:
+        get_input = input()
+        return get_input
+
+def thank_you(name,points):
+    threat = points_evaluation(points)
+    text1 = 'Thank you' + name + 'have a nice day' + '\n' + 'You are '+ threat + 'from covid 19 and collect your detailed report'
+    voice = gTTS(text = text1, lang = 'en',slow = False )
+    voice.save('thankyou.mp3')
+    os.system("start thankyou.mp3")
 
 def main():
-    name = input("Please Enter Your Name:")
-    age = int(input("\nAnd Your Age is "))
-    height = float(input("\nHeight(in m): "))
-    weight = float(input("\nWeight(in kg): "))
+    name = speak('Your name please')
+    print(name)
+    age = speak('AND Your age is')
+    print(age)
+    height = speak('What is your height(in m)')
+    print(height)
+    weight = speak('What is your weight(in kg)')
+    print(weight)
     print("\n\nNOTE-Mention all the options if you experience more than one\n")
     points = conditions()
     threat = points_evaluation(points)
@@ -146,10 +184,13 @@ def main():
     database(survey_report)
     survey_file(survey_report)
     pdf('survey-report')
+    thank_you(name,points)
     
     
 
 
 if __name__=="__main__":
     main()
+
+
 
